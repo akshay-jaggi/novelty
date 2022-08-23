@@ -55,7 +55,7 @@ def train_streaming(model, device, train_loader, optimizer, epoch,
 
 def train_streaming_unbalanced(model, device, train_loader, optimizer, epoch,
                                experimental_dist, instrumental_dist, max_scaler,
-                               batches_per_epoch = 100):
+                               batches_per_epoch = 100, lr_scaler = False, prob_func = lambda prob: prob):
     model.train()
     train_loss = 0
     correct = torch.zeros(10)
@@ -66,8 +66,13 @@ def train_streaming_unbalanced(model, device, train_loader, optimizer, epoch,
         if batch_idx >= batches_per_epoch * epoch:
             break
         mask = instrumental_dist(target, max_scaler) < experimental_dist(target)
+        if mask.sum() == 0:
+            continue
         data = data[mask]
         target = target[mask]
+        if lr_scaler:
+            probs = experimental_dist(torch.arange(0, 10))
+            optimizer.param_groups[0]['lr'] = prob_func(probs[target]).item()
         train_loss, correct, kept = minibatch_step(model, device, optimizer, data, target, train_loss, kept, correct)
     return train_loss / kept.sum(), correct / kept, kept
 
