@@ -70,9 +70,6 @@ def train_streaming_unbalanced(model, device, train_loader, optimizer, epoch,
             continue
         data = data[mask]
         target = target[mask]
-        if lr_scaler:
-            probs = experimental_dist(torch.arange(0, 10))
-            optimizer.param_groups[0]['lr'] = prob_func(probs[target]).item()
         train_loss, correct, kept = minibatch_step(model, device, optimizer, data, target, train_loss, kept, correct)
     return train_loss / kept.sum(), correct / kept, kept
 
